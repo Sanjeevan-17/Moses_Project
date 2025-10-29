@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Crime Predictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      font-family: 'Urbanist', sans-serif;
+      background: linear-gradient(135deg, #0f0f0f, #1a0026);
+      color: #fff;
+    }
+
+    .container {
+      max-width: 650px;
+      background-color: #181818;
+      margin: auto;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 0 25px rgba(138, 43, 226, 0.3);
+    }
+
+    h1 {
+      text-align: center;
+      color: #b266ff;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      background-color: #2c2c2c;
+      border: 1px solid #b266ff;
+      border-radius: 8px;
+      color: #fff;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 30px;
+      background-color: #b266ff;
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #9f4df2;
+    }
+
+    #result {
+      margin-top: 30px;
+      padding: 20px;
+      background-color: #2b2b2b;
+      border-left: 4px solid #b266ff;
+      border-radius: 8px;
+      text-align: center;
+      color: #e1baff;
+    }
+
+    h3 {
+      margin-top: 40px;
+      color: #b266ff;
+      text-align: center;
+    }
+
+    ul {
+      padding-left: 0;
+      list-style: none;
+    }
+
+    li {
+      background-color: #2b2b2b;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      border-left: 3px solid #b266ff;
+    }
+
+    .logout {
+      display: block;
+      margin: 40px auto 0;
+      padding: 12px 30px;
+      background-color: transparent;
+      color: #b266ff;
+      border: 2px solid #b266ff;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .logout:hover {
+      background-color: #b266ff;
+      color: #000;
+    }
+
+    .gps-button {
+      margin-top: 10px;
+      background-color: #444;
+      color: #eee;
+      border: 1px solid #b266ff;
+      border-radius: 8px;
+      padding: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .gps-button:hover {
+      background-color: #b266ff;
+      color: #000;
+    }
+
+    #policeContact {
+      margin-top: 20px;
+      background-color: #2b2b2b;
+      padding: 15px;
+      border-left: 4px solid #b266ff;
+      border-radius: 8px;
+      color: #e1baff;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <script>
+    if (localStorage.getItem("loggedIn") !== "true") {
+      window.location.href = "login.html";
+    }
+  </script>
+
+  <div class="container">
+    <h1>AI Crime Predictor</h1>
+    <form id="crimeForm">
+      <label for="location">Location</label>
+      <input type="text" id="location" required />
+      <button type="button" class="gps-button" onclick="getCurrentLocation()">📍 Use Current Location</button>
+
+      <label for="crimeType">Crime Type</label>
+      <select id="crimeType">
+        <option>Theft</option>
+        <option>Assault</option>
+        <option>Burglary</option>
+        <option>Homicide</option>
+        <option>Drug Possession</option>
+      </select>
+
+      <label for="time">Time of Day</label>
+      <select id="time">
+        <option>Morning</option>
+        <option>Afternoon</option>
+        <option>Evening</option>
+        <option>Night</option>
+      </select>
+
+      <label for="day">Day of Week</label>
+      <select id="day">
+        <option>Monday</option>
+        <option>Tuesday</option>
+        <option>Wednesday</option>
+        <option>Thursday</option>
+        <option>Friday</option>
+        <option>Saturday</option>
+        <option>Sunday</option>
+      </select>
+
+      <button type="submit">Predict Crime</button>
+    </form>
+
+    <div id="result"></div>
+
+    <h3>📞 Nearby Police Station</h3>
+    <div id="policeContact">
+      Contact: <span id="policeNumber">Not Available</span>
+    </div>
+
+    <h3>Prediction History</h3>
+    <ul id="historyList"></ul>
+
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
+
+  <script>
+    function logout() {
+      localStorage.removeItem("loggedIn");
+      window.location.href = "login.html";
+    }
+
+    const crimeWeights = {
+      'Theft': 0.3,
+      'Assault': 0.5,
+      'Burglary': 0.4,
+      'Homicide': 0.7,
+      'Drug Possession': 0.6
+    };
+
+    const timeWeights = {
+      'Morning': 0.2,
+      'Afternoon': 0.3,
+      'Evening': 0.5,
+      'Night': 0.6
+    };
+
+    const dayWeights = {
+      'Monday': 0.3,
+      'Tuesday': 0.3,
+      'Wednesday': 0.3,
+      'Thursday': 0.4,
+      'Friday': 0.6,
+      'Saturday': 0.7,
+      'Sunday': 0.6
+    };
+
+    function loadHistory() {
+      const history = JSON.parse(localStorage.getItem("crimeHistory")) || [];
+      const list = document.getElementById("historyList");
+      list.innerHTML = "";
+      history.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `${item.crimeType} on ${item.day} (${item.time}) → ${item.probability}% [${item.risk}]`;
+        list.appendChild(li);
+      });
+    }
+
+    function updatePoliceContact(locationName) {
+      const contacts = {
+        "Chennai": "+91-44-23456789",
+        "Mumbai": "+91-22-98765432",
+        "Delhi": "+91-11-10000000",
+        "Bangalore": "+91-80-11223344",
+        "Hyderabad": "+91-40-99887766"
+      };
+
+      let found = Object.keys(contacts).find(city =>
+        locationName.toLowerCase().includes(city.toLowerCase())
+      );
+
+      document.getElementById("policeNumber").innerText =
+        found ? contacts[found] : "100 (Emergency)";
+    }
+
+    document.getElementById("crimeForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const location = document.getElementById("location").value;
+      const crimeType = document.getElementById("crimeType").value;
+      const time = document.getElementById("time").value;
+      const day = document.getElementById("day").value;
+
+      document.getElementById("result").innerText = "⏳ Predicting...";
+      updatePoliceContact(location); // update police number for manual input too
+
+      setTimeout(() => {
+        const score = (
+          crimeWeights[crimeType] +
+          timeWeights[time] +
+          dayWeights[day]
+        ) / 3;
+
+        const probability = (score * 100).toFixed(2);
+
+        let risk = "Low";
+        if (probability > 70) risk = "High";
+        else if (probability > 40) risk = "Moderate";
+
+        document.getElementById("result").innerText =
+          `Predicted Crime Probability: ${probability}%\nRisk Level: ${risk}`;
+
+        const history = JSON.parse(localStorage.getItem("crimeHistory")) || [];
+        history.unshift({ crimeType, time, day, probability, risk });
+        if (history.length > 5) history.pop();
+        localStorage.setItem("crimeHistory", JSON.stringify(history));
+        loadHistory();
+      }, 800);
+    });
+
+    function getCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(success, error);
+      } else {
+        alert("Geolocation is not supported by this browser.");
+      }
+
+      function success(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
+          .then(response => response.json())
+          .then(data => {
+            const locationName = data.address.city || data.address.town || data.address.village || "Unknown Location";
+            document.getElementById("location").value = locationName;
+            updatePoliceContact(locationName);
+          })
+          .catch(() => {
+            const fallback = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            document.getElementById("location").value = fallback;
+            updatePoliceContact(fallback);
+          });
+      }
+
+      function error(err) {
+        alert("Unable to retrieve location: " + err.message);
+      }
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>
