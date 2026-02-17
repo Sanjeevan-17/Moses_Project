@@ -26,9 +26,9 @@ pipeline{
         }
         stage('Deploy'){
             steps{
-                sh 'docker push $Dockerhub_Image:latest'
-                sh 'docker push $Dockerhub_Image:$BUILD_NUMBER'
-                sh 'docker run -d -p 80:80 $Dockerhub_Image:latest'
+                sh 'docker push $Dockerhub_Image:latest''
+                docker push $Dockerhub_Image:$BUILD_NUMBER''
+                docker run -d -p 9080:80 $Dockerhub_Image:latest'
             }
         }
     
