@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Crime Prediction</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    form {
+      max-width: 500px;
+      margin: auto;
+      background-color: #1e1e1e;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #00e67655;
+    }
+    label, select, input {
+      display: block;
+      width: 100%;
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    #map {
+      height: 300px;
+      margin-top: 15px;
+      border-radius: 10px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      background-color: #00e676;
+      border: none;
+      width: 100%;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #222;
+      border-radius: 8px;
+      font-size: 18px;
+      text-align: center;
+    }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+</head>
+<body>
+  <h2 align="center">🌐 AI Crime Prediction System</h2>
+  <form id="crimeForm">
+    <label for="crimeType">Crime Type</label>
+    <select id="crimeType" required>
+      <option>Theft</option><option>Assault</option><option>Burglary</option>
+      <option>Homicide</option><option>Drug Possession</option>
+    </select>
+    <label for="time">Time of Day</label>
+    <select id="time" required>
+      <option>Morning</option><option>Afternoon</option>
+      <option>Evening</option><option>Night</option>
+    </select>
+    <label for="day">Day of Week</label>
+    <select id="day" required>
+      <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+      <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+    </select>
+    <label>Select Location</label>
+    <div id="map"></div>
+    <input type="hidden" id="lat"><input type="hidden" id="lng">
+    <button type="submit">Predict Crime Risk</button>
+    <div id="result"></div>
+  </form>
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([12.9716, 77.5946], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    let marker;
+    map.on('click', function(e) {
+      const { lat, lng } = e.latlng;
+      document.getElementById('lat').value = lat;
+      document.getElementById('lng').value = lng;
+      if (marker) marker.setLatLng([lat, lng]);
+      else marker = L.marker([lat, lng]).addTo(map);
+    });
+    document.getElementById('crimeForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const data = {
+        crime_type: document.getElementById('crimeType').value,
+        time: document.getElementById('time').value,
+        day: document.getElementById('day').value,
+        latitude: parseFloat(document.getElementById('lat').value),
+        longitude: parseFloat(document.getElementById('lng').value)
+      };
+      if (!data.latitude || !data.longitude) {
+        alert("Please select a location on the map."); return;
+      }
+      document.getElementById('result').innerText = "⏳ Predicting...";
+      fetch("http://127.0.0.1:5000/predict", {
+        method: "POST",
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      })
+      .then(res => res.json())
+      .then(res => {
+        document.getElementById('result').innerText =
+          `🔍 Prediction: ${res.prediction === 1 ? "High" : "Low"} Risk\n📊 Probability: ${res.probability}%`;
+      });
+    });
+  </script>
+</body>
+</html>
