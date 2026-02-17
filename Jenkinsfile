@@ -9,7 +9,7 @@ pipeline{
         stage("Checkout"){
             steps{
                 git branch : 'main', 
-                url : ''
+                url : 'https://github.com/Sanjeevan-17/Moses_Project.git'
             }
         }
         stage('Docker login'){
